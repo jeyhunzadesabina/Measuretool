@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Measure Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      body {
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+    </style>
+  </head>
+  <body class="bg-[#e9dfcf]">
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState } = React;
+
+      function App() {
+        const [category, setCategory] = useState("Length");
+        const [value, setValue] = useState("");
+        const [fromUnit, setFromUnit] = useState("");
+        const [toUnit, setToUnit] = useState("");
+        const [result, setResult] = useState("");
+        const [copyMessage, setCopyMessage] = useState("");
+        const tabs = ["Length", "Weight", "Temperature"];
+        const selectedTabIndex = tabs.indexOf(category);
+
+        const unitOptions = {
+          Length: ["Meter", "Kilometer", "Centimeter", "Millimeter", "Inch", "Foot"],
+          Weight: ["Kilogram", "Gram", "Pound", "Ounce"],
+          Temperature: ["Celsius", "Fahrenheit", "Kelvin"],
+        };
+
+        const lengthToMeter = {
+          Meter: 1,
+          Kilometer: 1000,
+          Centimeter: 0.01,
+          Millimeter: 0.001,
+          Inch: 0.0254,
+          Foot: 0.3048,
+        };
+
+        const weightToKilogram = {
+          Kilogram: 1,
+          Gram: 0.001,
+          Pound: 0.45359237,
+          Ounce: 0.028349523125,
+        };
+
+        const formatNumber = (num) => {
+          if (!Number.isFinite(num)) return "";
+          return Number(num.toFixed(6)).toString();
+        };
+
+        const handleConvert = () => {
+          if (!value || !fromUnit || !toUnit) {
+            setResult("Please fill all fields.");
+            return;
+          }
+
+          const numericValue = Number(value);
+          if (!Number.isFinite(numericValue)) {
+            setResult("Please enter a valid number.");
+            return;
+          }
+
+          let convertedValue = numericValue;
+
+          if (category === "Length") {
+            const inMeters = numericValue * lengthToMeter[fromUnit];
+            convertedValue = inMeters / lengthToMeter[toUnit];
+          } else if (category === "Weight") {
+            const inKilograms = numericValue * weightToKilogram[fromUnit];
+            convertedValue = inKilograms / weightToKilogram[toUnit];
+          } else if (category === "Temperature") {
+            let inCelsius = numericValue;
+            if (fromUnit === "Fahrenheit") inCelsius = ((numericValue - 32) * 5) / 9;
+            if (fromUnit === "Kelvin") inCelsius = numericValue - 273.15;
+
+            if (toUnit === "Fahrenheit") convertedValue = (inCelsius * 9) / 5 + 32;
+            else if (toUnit === "Kelvin") convertedValue = inCelsius + 273.15;
+            else convertedValue = inCelsius;
+          }
+
+          setResult(`${formatNumber(numericValue)} ${fromUnit} = ${formatNumber(convertedValue)} ${toUnit}`);
+        };
+
+        const handleReset = () => {
+          setValue("");
+          setFromUnit("");
+          setToUnit("");
+          setResult("");
+          setCopyMessage("");
+        };
+
+        const handleSwapUnits = () => {
+          setFromUnit(toUnit);
+          setToUnit(fromUnit);
+          setResult("");
+          setCopyMessage("");
+        };
+
+        const handleCopyResult = async () => {
+          if (!result) {
+            setCopyMessage("No result to copy");
+            setTimeout(() => setCopyMessage(""), 1500);
+            return;
+          }
+
+          try {
+            await navigator.clipboard.writeText(result);
+            setCopyMessage("Copied!");
+          } catch (error) {
+            setCopyMessage("Copy failed");
+          }
+
+          setTimeout(() => setCopyMessage(""), 1500);
+        };
+
+        return (
+          <div className="relative min-h-screen overflow-hidden bg-[#e9dfcf] text-[#2d2b27]">
+            <header className="relative z-10 border-b border-[#d4c8b5] bg-[#dfd2bd] px-4 py-5 sm:px-8">
+              <div className="mx-auto flex w-full max-w-6xl items-center">
+                <div className="leading-none">
+                  <p className="text-2xl font-black text-[#4a55c8]">Measure</p>
+                  <p className="text-2xl font-black text-[#4a55c8]">Tool</p>
+                </div>
+              </div>
+            </header>
+
+            <div className="pointer-events-none absolute left-[-80px] top-28 hidden h-56 w-56 rotate-[-35deg] rounded-3xl border-2 border-[#2f2b23]/25 bg-[#f6e5c7] shadow-[4px_4px_0_#00000020] md:block" />
+            <div className="pointer-events-none absolute right-[-60px] top-36 hidden h-60 w-36 rounded-2xl border-2 border-[#2f2b23]/20 bg-[#ef8e8b] shadow-[4px_4px_0_#00000020] lg:block">
+              <div className="h-full w-full bg-[linear-gradient(to_bottom,transparent_0%,transparent_8%,rgba(30,24,20,0.35)_8%,rgba(30,24,20,0.35)_8.8%,transparent_8.8%,transparent_100%)] bg-[length:100%_12%]" />
+            </div>
+            <div className="pointer-events-none absolute bottom-[-90px] left-[-40px] hidden h-56 w-72 rotate-12 rounded-3xl border-2 border-[#2f2b23]/20 bg-[#f6d8b9] shadow-[4px_4px_0_#00000020] md:block" />
+
+            <main className="relative z-10 mx-auto flex min-h-[calc(100vh-88px)] w-full max-w-6xl items-center justify-center px-4 py-10 sm:px-8">
+              <section className="w-full max-w-[480px] rounded-2xl border-2 border-black bg-[#f1dcaa] p-4 shadow-[5px_5px_0_#000000] sm:h-[444px] sm:w-[480px] sm:p-6">
+                <div className="relative mb-5 grid grid-cols-3 gap-2 rounded-xl bg-[#ecd6a4] p-1">
+                  <div
+                    className="pointer-events-none absolute top-1 h-10 rounded-[8px] border-2 border-black bg-[#f7e8c5] shadow-[2px_2px_0_#000000] transition-all duration-300 ease-out"
+                    style={{
+                      width: "calc((100% - 1rem) / 3)",
+                      left: `calc(0.25rem + ${selectedTabIndex} * ((100% - 1rem) / 3 + 0.5rem))`,
+                    }}
+                  />
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab}
+                      className={`relative z-10 h-10 rounded-[8px] px-2 text-xs font-bold transition sm:text-sm ${
+                        category === tab
+                          ? "text-black"
+                          : "border-2 border-transparent bg-transparent text-black/75 shadow-none"
+                      }`}
+                      onClick={() => setCategory(tab)}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+
+                <label className="mb-2 block text-sm font-medium">Enter value</label>
+                <input
+                  type="number"
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  placeholder="Example: 20"
+                  className="mb-3 h-10 w-full rounded-[8px] border-2 border-black bg-[#FFF7E8] px-3 text-sm text-[#3c372f] shadow-[2px_2px_0_#000000] outline-none placeholder:text-[#7c7568] focus:shadow-[1px_1px_0_#000000]"
+                />
+
+                <div className="relative mb-3">
+                  <select
+                    value={fromUnit}
+                    onChange={(e) => setFromUnit(e.target.value)}
+                    className="h-10 w-full appearance-none rounded-[8px] border-2 border-black bg-[#FFF7E8] px-3 pr-10 text-sm text-[#3c372f] shadow-[2px_2px_0_#000000] outline-none focus:shadow-[1px_1px_0_#000000]"
+                  >
+                    <option value="">From unit</option>
+                    {unitOptions[category].map((unit) => (
+                      <option key={unit} value={unit}>
+                        {unit}
+                      </option>
+                    ))}
+                  </select>
+                  <svg
+                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-black/80"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
+                </div>
+
+                <div className="mb-3 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={handleSwapUnits}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-black/70 bg-[#f6e7c4] text-base transition hover:brightness-95"
+                    aria-label="Swap from and to units"
+                    title="Swap units"
+                  >
+                    ↕
+                  </button>
+                </div>
+
+                <div className="relative mb-4">
+                  <select
+                    value={toUnit}
+                    onChange={(e) => setToUnit(e.target.value)}
+                    className="h-10 w-full appearance-none rounded-[8px] border-2 border-black bg-[#FFF7E8] px-3 pr-10 text-sm text-[#3c372f] shadow-[2px_2px_0_#000000] outline-none focus:shadow-[1px_1px_0_#000000]"
+                  >
+                    <option value="">To unit</option>
+                    {unitOptions[category].map((unit) => (
+                      <option key={unit} value={unit}>
+                        {unit}
+                      </option>
+                    ))}
+                  </select>
+                  <svg
+                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-black/80"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button
+                    onClick={handleConvert}
+                    className="h-10 rounded-[8px] border-2 border-black bg-[#ff9f1b] px-4 text-sm font-bold shadow-[2px_2px_0_#000000] transition hover:brightness-95 active:shadow-[1px_1px_0_#000000]"
+                  >
+                    Convert
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    className="h-10 rounded-[8px] border-2 border-black bg-[#f6dca1] px-4 text-sm font-bold shadow-[2px_2px_0_#000000] transition hover:brightness-95 active:shadow-[1px_1px_0_#000000]"
+                  >
+                    Reset
+                  </button>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-2 text-xs text-[#6d665a]">
+                  <p>{result || "Result will appear here"}</p>
+                  <button
+                    type="button"
+                    onClick={handleCopyResult}
+                    className="text-[#4f4b43] underline decoration-dotted underline-offset-2"
+                  >
+                    {copyMessage || "Copy result"}
+                  </button>
+                </div>
+              </section>
+            </main>
+          </div>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+  </body>
+</html>
